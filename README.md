@@ -1,186 +1,157 @@
-# Freight Rate Prediction - Production ML Pipeline
+# Freight Rate Prediction
 
-[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-blue.svg)](https://www.python.org/)
-[![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.4%2B-orange.svg)](https://scikit-learn.org/)
-[![LightGBM](https://img.shields.io/badge/LightGBM-4.0%2B-brightgreen.svg)](https://lightgbm.readthedocs.io/)
-[![Status](https://img.shields.io/badge/Status-Complete%20%26%20Validated-success.svg)](#)
-
-A high-performance machine learning solution for freight spot rate prediction across U.S. logistics lanes. Built with a production-first mindset, rigorous temporal validation, robust anomaly detection, and state-of-the-art gradient boosting.
+Machine learning pipeline for predicting spot freight rates across US corridors. The model predicts rates for 12,000 loads in `data/validation.csv` and a 31-day test scenario in `data/december-chart-inputs.csv`.
 
 ---
 
-## 📑 Table of Contents
-1. [Project Overview & Key Results](#-project-overview--key-results)
-2. [Deliverables Checklist](#-deliverables-checklist)
-3. [Quickstart for Senior Reviewers](#-quickstart-for-senior-reviewers)
-4. [Project Structure](#-project-structure)
-5. [Data Quality & Anomaly Discovery](#-data-quality--anomaly-discovery)
-6. [Validation Strategy](#-validation-strategy)
-7. [Model Benchmarks & Evolution](#-model-benchmarks--evolution)
-8. [December Seasonality Analysis](#-december-seasonality-analysis)
-9. [Scoring Verification](#-scoring-verification)
+## Setup and How to Run
+
+### Requirements
+- Python 3.10+ (tested on Python 3.14)
+- Dependencies listed in `requirements.txt`
+
+### Quick Start
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/MohammedTaharwah/freight-rate-prediction.git
+   cd freight-rate-prediction
+   ```
+
+2. **Set up the virtual environment:**
+   ```bash
+   python -m venv .venv
+   # Windows:
+   .venv\Scripts\activate
+   # Linux / macOS:
+   source .venv/bin/activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+   *Alternatively, if using `uv`:*
+   ```bash
+   uv sync
+   ```
+
+4. **Run the scoring script:**
+   To validate the generated predictions and produce the December chart:
+   ```bash
+   python score.py --predictions validation_predictions.csv --december-predictions data/december_predictions.csv
+   ```
+   Or via `uv`:
+   ```bash
+   uv run python score.py --predictions validation_predictions.csv --december-predictions data/december_predictions.csv
+   ```
+
+   **Expected Output:**
+   ```text
+   Validated 12,000 final predictions.
+   Validated 31 fixed December predictions.
+   Created chart: scorer_results/candidate_december.png
+   Final validation metrics are calculated by Spotter after submission.
+   ```
 
 ---
 
-## 🚀 Project Overview & Key Results
-
-The objective of this challenge is to accurately predict freight spot rates (`posted_rate`) across thousands of Origin-Destination lanes, equipment types, and dates, with final evaluation on **12,000 unlabelled loads in November 2025** (`validation.csv`) and a **31-day holiday stress-test in December 2025** (`december_chart_inputs.csv`).
-
-### Key Highlights:
-- **Identified & Resolved Data Quality Glitches**: Uncovered 669 corrupted training loads (1.39% of dataset) with irrational pricing ($> \$4.00$/mile or $< \$1.00$/mile) despite normal market indices.
-- **Superior Prediction Accuracy**:
-  - Baseline Ridge Regression MAE: **\$198.32** ($R^2 = 0.8101$).
-  - Final Clean LightGBM Overall MAE: **\$110.93** (an average \$87.39/load error reduction).
-  - Normal Market Validation MAE: **\$50.54**, RMSE: **\$77.11**, and **$R^2 = 0.9968$** (explaining 99.68% of price variance).
-- **100% Verification**: Output verified and approved by the official evaluation harness [`score.py`](score.py).
-
----
-
-## ✅ Deliverables Checklist
-
-| Deliverable | Location | Status | Details |
-| :--- | :--- | :---: | :--- |
-| **1. GitHub Repository** | [GitHub Repo](https://github.com/MohammedTaharwah/freight-rate-prediction) | ✅ Complete | Clean git history, dependencies, and reproducible pipeline |
-| **2. Validation Predictions** | [`validation_predictions.csv`](validation_predictions.csv) | ✅ Complete | Exactly 12,000 rows with `load_id` and `predicted_rate` |
-| **3. December Predictions** | [`data/december_predictions.csv`](data/december_predictions.csv) | ✅ Complete | Exactly 31 daily predictions keeping all 7 columns intact |
-| **4. Scoring Chart** | [`scorer_results/candidate_december.png`](scorer_results/candidate_december.png) | ✅ Complete | Generated automatically by `score.py` |
-| **5. Written Report** | PDF / DOCX in submission package | ✅ Complete | Comprehensive analysis of validation, models, and chart |
-| **6. Loom Walkthrough** | Link in submission package | ✅ Complete | 2-3 minute presentation of findings and code architecture |
-
----
-
-## ⚡ Quickstart for Senior Reviewers
-
-You can run and reproduce this project either using standard `pip` or using `uv`.
-
-### Option A: Standard Pip Setup
-```bash
-# 1. Clone repository
-git clone https://github.com/MohammedTaharwah/freight-rate-prediction.git
-cd freight-rate-prediction
-
-# 2. Create virtual environment
-python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
-# On Linux/macOS:
-source .venv/bin/activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Verify predictions with score.py
-python score.py --predictions validation_predictions.csv --december-predictions data/december_predictions.csv
-```
-
-### Option B: Using modern `uv` (Recommended for high speed)
-```bash
-# Sync environment
-uv sync
-
-# Run score script directly
-uv run python score.py --predictions validation_predictions.csv --december-predictions data/december_predictions.csv
-```
-
-Expected output from `score.py`:
-```text
-Validated 12,000 final predictions.
-Validated 31 fixed December predictions.
-Created chart: scorer_results/candidate_december.png
-Final validation metrics are calculated by Spotter after submission.
-```
-
----
-
-## 📁 Project Structure
+## Repository Structure
 
 ```text
 freight-rate-prediction/
 ├── Notebooks/
-│   └── freight-rate-prediction.ipynb    # End-to-end exploratory analysis, modeling & inference
+│   └── freight-rate-prediction.ipynb    # Full exploratory analysis, cleaning, training, and inference
 ├── data/
-│   ├── train-test.csv                   # Historical training data (Jan 1, 2025 - Oct 31, 2025)
+│   ├── train-test.csv                   # Historical training data (Jan 1 - Oct 31, 2025)
 │   ├── validation.csv                   # Target evaluation set (12,000 loads, Nov 2025)
 │   ├── validation-predictions-template.csv
 │   ├── december-chart-inputs.csv        # 31-day fixed input template for Dec 2025
-│   └── december_predictions.csv         # Completed predictions for December chart
+│   └── december_predictions.csv         # Generated predictions for December 2025
 ├── scorer_results/
-│   └── candidate_december.png           # Scorer-generated December rate trajectory
-├── src/                                 # Production package modules
-├── requirements.txt                     # Pinned project dependencies
-├── pyproject.toml                       # Project metadata & configurations
-├── score.py                             # Official validation & scoring script
-├── validation_predictions.csv           # Final 12,000 load predictions submitted
-└── README.md                            # Comprehensive project documentation
+│   └── candidate_december.png           # Scorer-generated December plot
+├── src/                                 # Project source package
+├── requirements.txt                     # Pinned dependencies
+├── pyproject.toml                       # Build & project metadata
+├── score.py                             # Evaluation and chart generation script
+├── validation_predictions.csv           # 12,000 predictions for validation.csv
+└── README.md                            # Project documentation
 ```
 
 ---
 
-## 🔍 Data Quality & Anomaly Discovery
+## Exploratory Data Analysis & Data Quality
 
-During exploratory data analysis (EDA), our inspection revealed that:
-1. **Missing Data Imputation (No Leakage)**:
-   - `weight` had 300 missing values: Imputed using the **median weight per equipment category** (Reefer, Dry Van, Flatbed) derived strictly from training data.
-   - `market_index` had 374 missing values: Imputed using training median.
-2. **Pricing Hierarchy**:
-   - `Dry Van`: Median \$2.05/mile (Standard dry goods).
-   - `Flatbed`: Median \$2.22/mile (Open-deck, strapping/tarping surcharge).
-   - `Reefer`: Median \$2.31/mile (Refrigerated cargo, active fuel consumption).
-3. **The Hidden Data Quality Issue**:
-   - Residual error analysis of initial models showed extreme 99th percentile errors ($>\$10,000$).
-   - A deeper probe revealed **669 rows (1.39% of the dataset)** with rates exceeding \$4.00/mile (up to \$14.12/mile) or below \$1.00/mile, despite standard equipment, moderate weight, and normal `quote_signal` (~2.10).
-   - **Resolution**: Filtered out these 669 synthetic/corrupted rows during training. This prevented gradient distortion and allowed the model to learn the true underlying pricing mechanism.
+### Key Observations
+1. **Distance**: Strongest linear predictor with a Pearson correlation of +0.9085 with `posted_rate`.
+2. **Equipment Type**: Median rates per mile follow realistic equipment operating costs:
+   - Dry Van: ~$2.05 / mile
+   - Flatbed: ~$2.22 / mile
+   - Reefer: ~$2.31 / mile (additional fuel for refrigeration units)
+3. **Network Coverage**: 64 origin cities and 64 destination cities covering 4,014 unique lanes.
 
----
+### Missing Data Handling (No Leakage)
+- `weight` (300 missing values): Imputed using the median weight of the corresponding equipment type calculated strictly from the training set.
+- `market_index` (374 missing values): Imputed using the median of the training set.
 
-## 🛡️ Validation Strategy
-
-Freight spot rate pricing is non-stationary and subject to temporal drifts and seasonality. Random K-Fold CV creates massive **lookahead bias (Data Leakage)** by leaking future market rates into past predictions.
-
-- **Dataset Timeline**:
-  - `train-test.csv`: 2025-01-01 to 2025-10-31 (10 months, 48,000 rows).
-  - `validation.csv`: 2025-11-01 to 2025-11-30 (Month 11, 12,000 rows).
-  - `december_chart_inputs.csv`: 2025-12-01 to 2025-12-31 (Month 12, 31 days).
-- **Our Internal Split**:
-  - **Training Set**: Months 1 through 9 (Jan - Sep, 43,147 loads, 89.9%).
-  - **Validation Set**: Month 10 (October, 4,853 loads, 10.1%).
-  - This perfectly simulates predicting an unseen upcoming month under real-world market conditions.
+### Outlier Detection & Data Cleaning
+Residual analysis on the initial models revealed severe pricing anomalies in the training set:
+- **669 rows (1.39% of the dataset)** had rates per mile below $1.00 or above $4.00 (peaking at $14.12/mile) despite standard equipment and normal `market_index` / `quote_signal` values (~1.0 and ~2.1).
+- Training directly on these corrupt records distorted squared-error loss gradients and degraded predictions on normal loads.
+- Removing these 669 records from the training set reduced overall validation MAE from $147.39 to $110.93.
 
 ---
 
-## 📊 Model Benchmarks & Evolution
+## Validation Strategy
 
-| Model Stage | Training Data | Overall Val RMSE | Overall Val MAE | Normal Market MAE | Normal Market $R^2$ |
+Spot freight rates are time-dependent. Standard random K-fold cross-validation causes lookahead bias because future market trends leak into past predictions.
+
+To properly simulate predicting unseen future periods (November `validation.csv` and December `december-chart-inputs.csv`), a temporal split was used:
+- **Training Set (Months 1–9)**: January 1 to September 30, 2025 (43,147 loads, 89.9%).
+- **Validation Set (Month 10)**: October 1 to October 31, 2025 (4,853 loads, 10.1%).
+
+All imputations, feature encodings, and scalers were fit on the training portion and applied to the validation portion.
+
+---
+
+## Model Progression & Benchmark Results
+
+Models were evaluated on the Month 10 temporal holdout set:
+
+| Model | Training Subset | Overall Val RMSE | Overall Val MAE | Normal Market MAE | Normal Market R² |
 | :--- | :--- | :---: | :---: | :---: | :---: |
-| **1. Baseline (Ridge Regression)** | Raw Jan-Sep | \$666.08 | \$198.32 | \$120.40 | 0.8101 |
-| **2. LightGBM (Raw)** | Raw Jan-Sep | \$657.55 | \$147.39 | \$79.12 | 0.8149 |
-| **3. Clean LightGBM (Val Eval)** | Clean Jan-Sep | \$646.40 | \$110.93 | **\$50.54** | **0.9968** |
-| **4. Final Production Model** | Clean Full (Jan-Oct) | -- | -- | *Trained on all 47,331 clean loads* |
+| **Ridge Regression (Baseline)** | Raw Jan–Sep | $666.08 | $198.32 | $120.40 | 0.8101 |
+| **LightGBM (Raw)** | Raw Jan–Sep | $657.55 | $147.39 | $79.12 | 0.8149 |
+| **LightGBM (Clean Data)** | Clean Jan–Sep | $646.40 | $110.93 | **$50.54** | **0.9968** |
+| **Final Production Model** | Clean Full (Jan–Oct) | -- | -- | *Retrained on all 47,331 clean records* |
 
-### Feature Engineering Highlights:
-- **Geographic & Network Density**: Exact city spatial mapping (`lat`, `lon`), distance, and lane connectivity across 4,014 unique origin-destination pairs.
-- **Domain Interactors**: `weight_per_mile` to distinguish short-haul drayage from transcontinental line-haul.
-- **Calendar Signals**: `dayofyear`, `month`, `day`, `dayofweek`, and `is_weekend` to capture carrier availability and holiday surges.
-
----
-
-## 📈 December Seasonality Analysis
-
-The December test scenario fixes:
-- **Route**: Lexington, KY $\rightarrow$ Fort Wayne, IN (360 miles)
-- **Equipment**: Dry Van, 32,000 lbs
-- **Variable**: Date (Dec 01 to Dec 31, 2025)
-
-![December 2025 Rate Trajectory](scorer_results/candidate_december.png)
-
-### Key Economic Observations:
-1. **Base Rate**: Early December begins at **\$824.77** (\$2.29/mile), aligning with typical Midwest dry van line-haul rates.
-2. **Mid-Month Plateau**: Rates stabilize around **\$843 - \$847** as supply chains ramp up holiday fulfillment.
-3. **End-of-Year Peak**: Reaches **\$849.40** during the Christmas-to-New-Year week (Dec 24-31), reflecting reduced driver capacity, severe winter weather premiums, and urgent holiday replenishment.
+### Feature Engineering
+- **Temporal**: `month`, `day`, `dayofweek`, `is_weekend`, `dayofyear`, `quarter`.
+- **Spatial / Geographic**: `pickup_lat`, `pickup_lon`, `delivery_lat`, `delivery_lon`.
+- **Domain Interactors**: `weight_per_mile = weight / (distance + 1)`.
+- **Categoricals**: `equipment`, `pickup`, `delivery` handled natively via LightGBM categorical features.
 
 ---
 
-## 🛠️ Reproducibility Guarantee
+## December 2025 Trajectory Analysis
 
-All code, data transformations, and models have been executed and saved in [`Notebooks/freight-rate-prediction.ipynb`](Notebooks/freight-rate-prediction.ipynb). 
-Re-running the notebook end-to-end regenerates all artifacts and predictions deterministically.
+The December test inputs evaluate model behavior when all parameters are held constant and only the date changes:
+- Route: Lexington, KY to Fort Wayne, IN (360 miles)
+- Equipment: Dry Van, 32,000 lbs
+- Dates: 2025-12-01 to 2025-12-31
+
+![December 2025 Predicted Load Rate](scorer_results/candidate_december.png)
+
+### Observations:
+- **Early December**: Base rate starts at $824.77 ($2.29/mile), consistent with standard Midwest dry van rates.
+- **Mid-December**: Rises to $843 - $847 as retail volume peaks.
+- **Late December**: Peaks at $849.40 during December 24–31, reflecting holiday carrier capacity tightening and winter weather adjustments.
+
+---
+
+## Reproducing the Notebook
+
+To re-run the full pipeline from raw data to final prediction files:
+1. Open `Notebooks/freight-rate-prediction.ipynb` in VS Code or JupyterLab.
+2. Select the virtual environment kernel (`.venv`).
+3. Run all cells sequentially. The notebook regenerates `validation_predictions.csv` and `data/december_predictions.csv`.
